@@ -1,4 +1,4 @@
-package com.logicalpractice.phash;
+package com.logicalpractice.kindafasthash;
 
 import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
@@ -8,7 +8,7 @@ import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static com.logicalpractice.phash.Keys.generateKeys;
+import static com.logicalpractice.kindafasthash.Keys.generateKeys;
 
 /**
  *

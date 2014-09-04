@@ -1,4 +1,4 @@
-package com.logicalpractice.phash;
+package com.logicalpractice.kindafasthash;
 
 import java.util.ArrayList;
 import java.util.Collections;

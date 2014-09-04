@@ -1,7 +1,6 @@
-package com.logicalpractice.phash;
+package com.logicalpractice.kindafasthash;
 
 import java.util.AbstractMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 

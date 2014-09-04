@@ -1,4 +1,4 @@
-package com.logicalpractice.phash;
+package com.logicalpractice.kindafasthash;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
