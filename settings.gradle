@@ -15,5 +15,7 @@ include 'shared'
 include 'api'
 include 'services:webservice'
 */
+include 'kindafasthash-core'
+include 'kindafasthash-benchmarks'
 
 rootProject.name = 'KindaFastHash'

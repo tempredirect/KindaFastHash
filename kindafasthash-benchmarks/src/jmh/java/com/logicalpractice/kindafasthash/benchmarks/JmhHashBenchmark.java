@@ -1,6 +1,7 @@
-package com.logicalpractice.kindafasthash;
+package com.logicalpractice.kindafasthash.benchmarks;
 
 
+import com.logicalpractice.kindafasthash.Hash;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;

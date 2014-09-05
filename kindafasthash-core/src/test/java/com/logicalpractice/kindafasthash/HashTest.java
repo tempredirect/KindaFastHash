@@ -2,11 +2,7 @@ package com.logicalpractice.kindafasthash;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
-import org.hamcrest.Matchers;
 import org.junit.Test;
-import org.openjdk.jmh.annotations.TearDown;
 
 import javax.annotation.Nullable;
 import java.util.List;
