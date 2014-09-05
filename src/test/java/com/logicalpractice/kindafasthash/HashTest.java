@@ -1,8 +1,22 @@
 package com.logicalpractice.kindafasthash;
 
+import com.google.common.base.Function;
+import com.google.common.base.Functions;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
+import org.hamcrest.Matchers;
 import org.junit.Test;
+import org.openjdk.jmh.annotations.TearDown;
 
+import javax.annotation.Nullable;
+import java.util.List;
+import java.util.Map;
+
+import static com.google.common.collect.Iterators.transform;
+import static com.google.common.collect.Lists.newArrayList;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -33,6 +47,19 @@ public class HashTest {
 
         assertThat(testObject.size(), equalTo(1));
         assertThat(testObject.get("Wibble"), equalTo(11));
+    }
+
+    @Test
+    public void without() throws Exception {
+
+        Hash<String,Integer> testObject = Hash.<String,Integer>emptyHash()
+                .with("Wibble", 10)
+                .with("Wobble",11)
+                .without("Wibble");
+
+        assertThat(testObject.get("Wibble"), nullValue());
+
+        assertThat(testObject.containsKey("Wibble"), equalTo(false));
     }
 
     @Test
@@ -85,6 +112,48 @@ public class HashTest {
         assertThat( testObject.get(new ConstantHashCode("Wobble")), equalTo(7));
     }
 
+    @SuppressWarnings("unchecked")
+    @Test
+    public void iterator_shouldContainAllEntries() throws Exception {
+
+        Hash<String, Integer> testObject = Hash.emptyHash();
+        testObject = testObject.with("Wibble",1)
+                .with("Wobble", 2)
+                .with("Foo", 3);
+        List<String> keys = newArrayList(transform(testObject.iterator(), this.<String>key()));
+        assertThat(keys, hasItems("Wibble", "Wobble", "Foo"));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void iterator_withConstantHashCodes_ShouldContainAllEntries() throws Exception {
+        Hash<ConstantHashCode, Integer> testObject = Hash.emptyHash();
+        testObject = testObject.with(new ConstantHashCode("Wibble"),1)
+                .with(new ConstantHashCode("Wobble"), 2)
+                .with(new ConstantHashCode("Foo"), 3);
+        List<String> keys = newArrayList(
+                transform(
+                        transform(testObject.iterator(), this.<ConstantHashCode>key()),
+                Functions.toStringFunction()));
+        assertThat(keys, hasItems("Wibble", "Wobble", "Foo"));
+    }
+
+    @Test
+    public void iterator_shouldBeEmptyForEmptyHash() throws Exception {
+        Hash<String, Integer> testObject = Hash.emptyHash();
+        assertThat(testObject.iterator().hasNext(), equalTo(false));
+    }
+
+    private <K> Function<? super Map.Entry<K,Integer>,K> key() {
+        return new Function<Map.Entry<K, Integer>, K>() {
+            @Nullable
+            @Override
+            public K apply(@Nullable Map.Entry<K, Integer> input) {
+                assert input != null;
+                return input.getKey();
+            }
+        };
+    }
 
     static class ConstantHashCode {
         private final String value ;
@@ -106,6 +175,11 @@ public class HashTest {
         @Override
         public int hashCode() {
             return 1;
+        }
+
+        @Override
+        public String toString() {
+            return value;
         }
     }
 }

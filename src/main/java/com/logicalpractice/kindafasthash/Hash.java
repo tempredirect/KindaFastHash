@@ -1,9 +1,12 @@
 package com.logicalpractice.kindafasthash;
 
+import com.google.common.collect.AbstractIterator;
+
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -11,7 +14,7 @@ import java.util.Set;
 /**
  * Simple implementation of a persistent Hash.
  */
-public class Hash<K, V> {
+public class Hash<K, V> implements Iterable<Map.Entry<K, V>> {
     private static int INITIAL_TABLE_SIZE = 16; // must be power of 2 or indexFor will assumes this
     private static EntryNode[] EMPTY_TABLE = new EntryNode[INITIAL_TABLE_SIZE];
     private static Hash EMPTY_HASH = new Hash(EMPTY_TABLE, 0);
@@ -64,6 +67,27 @@ public class Hash<K, V> {
         public V setValue(V value) {
             throw new UnsupportedOperationException("Updates are not supported");
         }
+
+        @Override
+        public boolean equals(Object o) {
+            // from the spec of Map.Entry
+            if (this == o) return true;
+            if (!(o instanceof Map.Entry)) return false;
+
+            Map.Entry mapEntry = (Map.Entry) o;
+            return key.equals(mapEntry.getKey()) && value.equals(mapEntry.getValue());
+        }
+
+        @Override
+        public int hashCode() {
+            // from the spec of Map.Entry
+            return (key.hashCode()) ^ (value.hashCode());
+        }
+
+        @Override
+        public String toString() {
+            return key + "=" + value;
+        }
     }
 
     public V get(Object key) {
@@ -88,35 +112,28 @@ public class Hash<K, V> {
         return null;
     }
 
-    public boolean containsKey(K key) {
+    public boolean containsKey(Object key) {
         return get(key) != null;
     }
 
     public Hash<K, V> with(K key, V value) {
-        assert key != null;
-        assert value != null;
+        if (key == null)
+            throw new NullPointerException("null keys are not allowed");
+        if (value == null)
+            throw new NullPointerException("null values are not allowed");
 
         int hashCode = hash(key);
         int index = indexFor(hashCode, entries.length);
-        EntryNode[] newTable = Arrays.copyOf(entries, entries.length);
-
-        // only handles new keys
-        EntryNode<K, V> current = entries[index];
         int size = this.size;
-        if (containsKey(key)) {
+        EntryNode[] newTable = Arrays.copyOf(entries, entries.length);
+        EntryNode<K, V> current = entries[index];
+        EntryNode<K, V> found = find(current, key);
+
+        if (found != null) {
             // E1 -> E2 -> E3 -> E4
-            Deque<EntryNode<K, V>> deque = new ArrayDeque<>();
-            while (!eq(current.key, key)) {
-                deque.add(current);
-                current = current.next;
-            }
-            EntryNode<K, V> replacement = new EntryNode<>(key, value, hashCode, current.next);
-            EntryNode<K, V> newHead = replacement, lastTail = replacement;
-            while ((current = deque.pollLast()) != null) {
-                newHead = new EntryNode<>(current.key, current.value, current.hash, lastTail);
-                lastTail = newHead;
-            }
-            newTable[index] = newHead;
+            Deque<EntryNode<K, V>> deque = headUpTo(current, found);
+            EntryNode<K, V> replacement = new EntryNode<>(key, value, hashCode, found.next);
+            newTable[index] = prependEntries(deque, replacement);
         } else {
             // new head
             newTable[index] = new EntryNode<>(key, value, hashCode, current);
@@ -126,6 +143,41 @@ public class Hash<K, V> {
             newTable = resize(newTable);
         }
         return new Hash<K, V>(newTable, size);
+    }
+
+    public Hash<K,V> without(Object key) {
+        if (key == null)
+            throw new NullPointerException("null keys are not allowed");
+        int hashCode = hash(key);
+        int index = indexFor(hashCode, entries.length);
+        EntryNode<K,V> current = entries[index];
+        EntryNode<K,V> found = find(current, key);
+
+        if (found != null) {
+            EntryNode[] newTable = Arrays.copyOf(entries, entries.length);
+            Deque<EntryNode<K, V>> deque = headUpTo(current, found);
+            newTable[index] = prependEntries(deque, found.next);
+            return new Hash<K,V>(newTable, size - 1);
+        }
+        return this; // remove is a noop if not present
+    }
+
+    private EntryNode<K, V> prependEntries(Deque<EntryNode<K, V>> deque, EntryNode<K, V> tail) {
+        EntryNode<K, V> current;EntryNode<K, V> newHead = tail, lastTail = tail;
+        while ((current = deque.pollLast()) != null) {
+            newHead = new EntryNode<>(current.key, current.value, current.hash, lastTail);
+            lastTail = newHead;
+        }
+        return newHead;
+    }
+
+    private Deque<EntryNode<K, V>> headUpTo(EntryNode<K, V> current, EntryNode<K, V> found) {
+        Deque<EntryNode<K, V>> deque = new ArrayDeque<>();
+        while (current != found) {
+            deque.add(current);
+            current = current.next;
+        }
+        return deque;
     }
 
     private EntryNode[] resize(EntryNode[] table) {
@@ -144,6 +196,19 @@ public class Hash<K, V> {
         return newTable;
     }
 
+    private EntryNode<K,V> find(EntryNode head, Object key) {
+        if (head == null) {
+            return null;
+        }
+        do {
+            if (eq(head.key, key)) {
+                return head;
+            }
+            head = head.next;
+        } while (head != null);
+        return null;
+    }
+
     public int size() {
         return size;
     }
@@ -156,8 +221,9 @@ public class Hash<K, V> {
         return hashCode & (length - 1);
     }
 
-    private int hash(Object key) {
-        return key.hashCode();
+    private static int hash(Object key) {
+        int h;
+        return (h = key.hashCode()) ^ (h >>> 16);
     }
 
     Set<Map.Entry<K, V>> entrySet() {
@@ -172,6 +238,27 @@ public class Hash<K, V> {
             }
         }
         return Collections.unmodifiableSet(entrySet);
+    }
+
+    public Iterator<Map.Entry<K, V>> iterator() {
+        return new AbstractIterator<Map.Entry<K,V>>() {
+            private int index = -1;
+            private EntryNode<K, V> last = null;
+
+            @Override
+            protected Map.Entry<K, V> computeNext() {
+                if (last != null && last.next != null) {
+                    return last = last.next; // move next and return it
+                }
+                for (index ++; index < entries.length; index++) {
+                    EntryNode<K, V> entry = entries[index];
+                    if (entry != null) {
+                        return last = entry;
+                    }
+                }
+                return endOfData();
+            }
+        };
     }
 
     public static void main(String[] args) {

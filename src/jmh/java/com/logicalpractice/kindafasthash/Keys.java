@@ -9,7 +9,7 @@ import java.util.List;
  */
 public class Keys {
 
-    public static String[] generateKeys(int count) {
+    public static String[] sequentialKeys(int count) {
         List<String> keys = new ArrayList<>(count);
 
         for( int i = 0; i < count; i ++ ) {

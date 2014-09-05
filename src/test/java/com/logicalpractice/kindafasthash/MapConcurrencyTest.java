@@ -17,9 +17,9 @@ public class MapConcurrencyTest {
     private static final long MIN_WARMUP_TIME_NS = TimeUnit.SECONDS.toNanos(20);
     private static final long TEST_TIME = TimeUnit.SECONDS.toNanos(5);
 
-    Map<String, Integer> testObject = new NonLockingHashMap<>();
+    Map<String, Integer> testObject = new CopyOnWriteHashMap<>();
 
-    String [] keys = Keys.generateKeys(10000);
+    String [] keys = Keys.sequentialKeys(10000);
 
     MetricRegistry metrics = new MetricRegistry();
 
